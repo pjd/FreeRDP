@@ -398,7 +398,7 @@ boolean rdp_send_pdu(rdpRdp* rdp, STREAM* s, uint16 type, uint16 channel_id)
 	sec_hold = s->p;
 	stream_seek(s, sec_bytes);
 
-	rdp_write_share_control_header(s, length, type, channel_id);
+	rdp_write_share_control_header(s, length - sec_bytes, type, channel_id);
 
 	s->p = sec_hold;
 	length += rdp_security_stream_out(rdp, s, length);
@@ -425,8 +425,8 @@ boolean rdp_send_data_pdu(rdpRdp* rdp, STREAM* s, uint8 type, uint16 channel_id)
 	sec_hold = s->p;
 	stream_seek(s, sec_bytes);
 
-	rdp_write_share_control_header(s, length, PDU_TYPE_DATA, channel_id);
-	rdp_write_share_data_header(s, length, type, rdp->settings->share_id);
+	rdp_write_share_control_header(s, length - sec_bytes, PDU_TYPE_DATA, channel_id);
+	rdp_write_share_data_header(s, length - sec_bytes, type, rdp->settings->share_id);
 
 	s->p = sec_hold;
 	length += rdp_security_stream_out(rdp, s, length);
