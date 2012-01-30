@@ -22,7 +22,7 @@
 #define __RDP_TYPES_H
 
 #ifdef _WIN32
-#include <WinDef.h>
+#include <windef.h>
 #endif
 
 /* Base Types */
@@ -68,7 +68,13 @@ typedef signed long long sint64;
 #ifdef HAVE_STDBOOL_H
 
 #include <stdbool.h>
+#ifndef _WIN32
 typedef int boolean;
+#else
+typedef unsigned char boolean;
+#endif
+
+
 
 #else
 
