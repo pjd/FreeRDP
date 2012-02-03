@@ -2,6 +2,7 @@
  * FreeRDP: A Remote Desktop Protocol Client
  * Certificate Handling
  *
+ * Copyright 2011 Jiten Pathy
  * Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +24,11 @@
 
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
+
+#include <freerdp/utils/file.h>
+
+static const char certificate_store_dir[] = "certs";
+static const char certificate_known_hosts_file[] = "known_hosts";
 
 #include "certificate.h"
 
@@ -281,31 +287,41 @@ static boolean certificate_process_server_public_signature(rdpCertificate* certi
 	crypto_md5_final(md5ctx, md5hash);
 
 	stream_read(s, encsig, siglen);
+
 	/* Last 8 bytes shall be all zero. */
+
 	for (sum = 0, i = sizeof(encsig) - 8; i < sizeof(encsig); i++)
 		sum += encsig[i];
-	if (sum != 0) {
+
+	if (sum != 0)
+	{
 		printf("certificate_process_server_public_signature: invalid signature\n");
 		//return false;
 	}
+
 	siglen -= 8;
 
 	crypto_rsa_public_decrypt(encsig, siglen, TSSK_KEY_LENGTH, tssk_modulus, tssk_exponent, sig);
 
 	/* Verify signature. */
-	if (memcmp(md5hash, sig, sizeof(md5hash)) != 0) {
+	if (memcmp(md5hash, sig, sizeof(md5hash)) != 0)
+	{
 		printf("certificate_process_server_public_signature: invalid signature\n");
 		//return false;
 	}
+
 	/*
 	 * Verify rest of decrypted data:
 	 * The 17th byte is 0x00.
 	 * The 18th through 62nd bytes are each 0xFF.
 	 * The 63rd byte is 0x01.
 	 */
+
 	for (sum = 0, i = 17; i < 62; i++)
 		sum += sig[i];
-	if (sig[16] != 0x00 || sum != 0xFF * (62 - 17) || sig[62] != 0x01) {
+
+	if (sig[16] != 0x00 || sum != 0xFF * (62 - 17) || sig[62] != 0x01)
+	{
 		printf("certificate_process_server_public_signature: invalid signature\n");
 		//return false;
 	}
@@ -461,13 +477,250 @@ boolean certificate_read_server_certificate(rdpCertificate* certificate, uint8* 
 	return true;
 }
 
+rdpKey* key_new(const char* keyfile)
+{
+	rdpKey* key;
+	RSA *rsa;
+	FILE *fp;
+
+	key = (rdpKey*) xzalloc(sizeof(rdpKey));
+
+	if (key == NULL)
+		return NULL;
+
+	fp = fopen(keyfile, "r");
+
+	if (fp == NULL)
+	{
+		printf("unable to load RSA key from %s: %s.", keyfile, strerror(errno));
+		return NULL;
+	}
+
+	rsa = PEM_read_RSAPrivateKey(fp, NULL, NULL, NULL);
+
+	if (rsa == NULL)
+	{
+		ERR_print_errors_fp(stdout);
+		fclose(fp);
+		return NULL;
+	}
+
+	fclose(fp);
+
+	switch (RSA_check_key(rsa))
+	{
+		case 0:
+			RSA_free(rsa);
+			printf("invalid RSA key in %s", keyfile);
+			return NULL;
+
+		case 1:
+			/* Valid key. */
+			break;
+
+		default:
+			ERR_print_errors_fp(stdout);
+			RSA_free(rsa);
+			return NULL;
+	}
+
+	if (BN_num_bytes(rsa->e) > 4)
+	{
+		RSA_free(rsa);
+		printf("RSA public exponent too large in %s", keyfile);
+		return NULL;
+	}
+
+	freerdp_blob_alloc(&key->modulus, BN_num_bytes(rsa->n));
+	BN_bn2bin(rsa->n, key->modulus.data);
+	crypto_reverse(key->modulus.data, key->modulus.length);
+	freerdp_blob_alloc(&key->private_exponent, BN_num_bytes(rsa->d));
+	BN_bn2bin(rsa->d, key->private_exponent.data);
+	crypto_reverse(key->private_exponent.data, key->private_exponent.length);
+	memset(key->exponent, 0, sizeof(key->exponent));
+	BN_bn2bin(rsa->e, key->exponent + sizeof(key->exponent) - BN_num_bytes(rsa->e));
+	crypto_reverse(key->exponent, sizeof(key->exponent));
+
+	RSA_free(rsa);
+
+	return key;
+}
+
+void key_free(rdpKey* key)
+{
+	if (key != NULL)
+	{
+		freerdp_blob_free(&key->modulus);
+		freerdp_blob_free(&key->private_exponent);
+		xfree(key);
+	}
+}
+
+void certificate_store_init(rdpCertificateStore* certificate_store)
+{
+	char* config_path;
+	rdpSettings* settings;
+
+	settings = certificate_store->settings;
+
+	config_path = freerdp_get_config_path(settings);
+	certificate_store->path = freerdp_construct_path(config_path, (char*) certificate_store_dir);
+
+	if (freerdp_check_file_exists(certificate_store->path) == false)
+	{
+		freerdp_mkdir(certificate_store->path);
+		printf("creating directory %s\n", certificate_store->path);
+	}
+
+	certificate_store->file = freerdp_construct_path(config_path, (char*) certificate_known_hosts_file);
+
+	if (freerdp_check_file_exists(certificate_store->file) == false)
+	{
+		certificate_store->fp = fopen((char*) certificate_store->file, "w+");
+
+		if (certificate_store->fp == NULL)
+		{
+			printf("certificate_store_open: error opening [%s] for writing\n", certificate_store->file);
+			return;
+		}
+
+		fflush(certificate_store->fp);
+	}
+	else
+	{
+		certificate_store->fp = fopen((char*) certificate_store->file, "r+");
+	}
+}
+
+int certificate_data_match(rdpCertificateStore* certificate_store, rdpCertificateData* certificate_data)
+{
+	FILE* fp;
+	int length;
+	char* data;
+	char* pline;
+	int match = 1;
+	long int size;
+
+	fp = certificate_store->fp;
+
+	if (!fp)
+		return match;
+
+	fseek(fp, 0, SEEK_END);
+	size = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+
+	data = (char*) xmalloc(size + 1);
+	length = fread(data, size, 1, fp);
+
+	if (size < 1)
+		return match;
+
+	data[size] = '\n';
+	pline = strtok(data, "\n");
+
+	while (pline != NULL)
+	{
+		length = strlen(pline);
+
+		if (length > 0)
+		{
+			length = strcspn(pline, " \t");
+			pline[length] = '\0';
+
+			if (strcmp(pline, certificate_data->hostname) == 0)
+			{
+				pline = &pline[length + 1];
+
+				if (strcmp(pline, certificate_data->fingerprint) == 0)
+					match = 0;
+				else
+					match = -1;
+				break;
+			}
+		}
+
+		pline = strtok(NULL, "\n");
+	}
+	xfree(data);
+
+	return match;
+}
+
+void certificate_data_print(rdpCertificateStore* certificate_store, rdpCertificateData* certificate_data)
+{
+	FILE* fp;
+
+	/* reopen in append mode */
+	fp = fopen(certificate_store->file, "a");
+
+	if (!fp)
+		return;
+
+	fprintf(certificate_store->fp,"%s %s\n", certificate_data->hostname, certificate_data->fingerprint);
+	fclose(fp);
+}
+
+rdpCertificateData* certificate_data_new(char* hostname, char* fingerprint)
+{
+	rdpCertificateData* certdata;
+
+	certdata = (rdpCertificateData*) xzalloc(sizeof(rdpCertificateData));
+
+	if (certdata != NULL)
+	{
+		certdata->hostname = xstrdup(hostname);
+		certdata->fingerprint = xstrdup(fingerprint);
+	}
+
+	return certdata;
+}
+
+void certificate_data_free(rdpCertificateData* certificate_data)
+{
+	if (certificate_data != NULL)
+	{
+		xfree(certificate_data->hostname);
+		xfree(certificate_data->fingerprint);
+		xfree(certificate_data);
+	}
+}
+
+rdpCertificateStore* certificate_store_new(rdpSettings* settings)
+{
+	rdpCertificateStore* certificate_store;
+
+	certificate_store = (rdpCertificateStore*) xzalloc(sizeof(rdpCertificateStore));
+
+	if (certificate_store != NULL)
+	{
+		certificate_store->settings = settings;
+		certificate_store_init(certificate_store);
+	}
+
+	return certificate_store;
+}
+
+void certificate_store_free(rdpCertificateStore* certstore)
+{
+	if (certstore != NULL)
+	{
+		if (certstore->fp != NULL)
+			fclose(certstore->fp);
+
+		xfree(certstore->path);
+		xfree(certstore->file);
+		xfree(certstore);
+	}
+}
+
 /**
  * Instantiate new certificate module.\n
  * @param rdp RDP module
  * @return new certificate module
  */
 
-rdpCertificate* certificate_new(void)
+rdpCertificate* certificate_new()
 {
 	rdpCertificate* certificate;
 
@@ -496,74 +749,5 @@ void certificate_free(rdpCertificate* certificate)
 			freerdp_blob_free(&(certificate->cert_info.modulus));
 
 		xfree(certificate);
-	}
-}
-
-rdpKey* key_new(const char *keyfile)
-{
-	rdpKey* key;
-	RSA *rsa;
-	FILE *fp;
-
-	key = (rdpKey*) xzalloc(sizeof(rdpKey));
-	if (key == NULL)
-		return NULL;
-
-	fp = fopen(keyfile, "r");
-	if (fp == NULL) {
-		printf("unable to load RSA key from %s: %s.", keyfile,
-		    strerror(errno));
-		return NULL;
-	}
-	rsa = PEM_read_RSAPrivateKey(fp, NULL, NULL, NULL);
-	if (rsa == NULL) {
-		ERR_print_errors_fp(stdout);
-		fclose(fp);
-		return NULL;
-	}
-	fclose(fp);
-
-	switch (RSA_check_key(rsa)) {
-	case 0:
-		RSA_free(rsa);
-		printf("invalid RSA key in %s", keyfile);
-		return NULL;
-	case 1:
-		/* Valid key. */
-		break;
-	default:
-		ERR_print_errors_fp(stdout);
-		RSA_free(rsa);
-		return NULL;
-	}
-
-	if (BN_num_bytes(rsa->e) > 4) {
-		RSA_free(rsa);
-		printf("RSA public exponent too large in %s", keyfile);
-		return NULL;
-	}
-
-	freerdp_blob_alloc(&key->modulus, BN_num_bytes(rsa->n));
-	BN_bn2bin(rsa->n, key->modulus.data);
-	crypto_reverse(key->modulus.data, key->modulus.length);
-	freerdp_blob_alloc(&key->private_exponent, BN_num_bytes(rsa->d));
-	BN_bn2bin(rsa->d, key->private_exponent.data);
-	crypto_reverse(key->private_exponent.data, key->private_exponent.length);
-	memset(key->exponent, 0, sizeof(key->exponent));
-	BN_bn2bin(rsa->e, key->exponent + sizeof(key->exponent) - BN_num_bytes(rsa->e));
-	crypto_reverse(key->exponent, sizeof(key->exponent));
-
-	RSA_free(rsa);
-
-	return key;
-}
-
-void key_free(rdpKey* key)
-{
-	if (key != NULL)
-	{
-		freerdp_blob_free(&key->modulus);
-		freerdp_blob_free(&key->private_exponent);
-		xfree(key);
 	}
 }
