@@ -1,5 +1,5 @@
 # FreeRDP: A Remote Desktop Protocol Client
-# keymaps cmake build script
+# libfreerdp-crypto cmake build script
 #
 # Copyright 2011 O.S. Systems Software Ltda.
 # Copyright 2011 Otavio Salvador <otavio@ossystems.com.br>
@@ -17,7 +17,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-install(FILES aliases amiga ataritt empty evdev fujitsu hp ibm macintosh macosx sony sun xfree86 xfree98 DESTINATION share/freerdp/keymaps)
-install(DIRECTORY digital_vndr DESTINATION share/freerdp/keymaps FILES_MATCHING PATTERN "*")
-install(DIRECTORY sgi_vndr DESTINATION share/freerdp/keymaps FILES_MATCHING PATTERN "*")
+set(FREERDP_CRYPTO_SRCS
+	ber.c
+	per.c
+	certificate.c
+	crypto.c
+	tls.c)
+
+add_library(freerdp-crypto ${FREERDP_CRYPTO_SRCS})
+
+set_target_properties(freerdp-crypto PROPERTIES VERSION ${FREERDP_VERSION_FULL} SOVERSION ${FREERDP_VERSION} PREFIX "lib")
+
+target_link_libraries(freerdp-crypto ${OPENSSL_LIBRARIES})
+
+install(TARGETS freerdp-crypto DESTINATION ${CMAKE_INSTALL_LIBDIR})
 

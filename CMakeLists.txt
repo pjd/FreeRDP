@@ -24,6 +24,7 @@ set(CMAKE_COLOR_MAKEFILE ON)
 # Include cmake modules
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
+include(CheckStructHasMember)
 include(FindPkgConfig)
 include(TestBigEndian)
 
@@ -96,6 +97,8 @@ check_include_files(stdint.h HAVE_STDINT_H)
 check_include_files(stdbool.h HAVE_STDBOOL_H)
 check_include_files(inttypes.h HAVE_INTTYPES_H)
 
+check_struct_has_member("struct tm" tm_gmtoff time.h HAVE_TM_GMTOFF)
+
 # Libraries that we have a hard dependency on
 find_required_package(OpenSSL)
 
@@ -159,6 +162,7 @@ add_subdirectory(libfreerdp-gdi)
 add_subdirectory(libfreerdp-rail)
 add_subdirectory(libfreerdp-cache)
 add_subdirectory(libfreerdp-codec)
+add_subdirectory(libfreerdp-crypto)
 add_subdirectory(libfreerdp-channels)
 add_subdirectory(libfreerdp-core)
 

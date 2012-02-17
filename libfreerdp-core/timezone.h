@@ -1,8 +1,8 @@
 /**
  * FreeRDP: A Remote Desktop Protocol Client
- * Channel Manager Unit Tests
+ * Time Zone Redirection
  *
- * Copyright 2011 Vic Lee
+ * Copyright 2012 Marc-Andre Moreau <marcandre.moreau@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,18 @@
  * limitations under the License.
  */
 
-#include "test_freerdp.h"
+#ifndef __TIMEZONE_H
+#define __TIMEZONE_H
 
-int init_channels_suite(void);
-int clean_channels_suite(void);
-int add_channels_suite(void);
+#include "rdp.h"
 
-void test_channels(void);
+#include <freerdp/freerdp.h>
+#include <freerdp/utils/stream.h>
+
+void rdp_read_system_time(STREAM* s, SYSTEM_TIME* system_time);
+void rdp_write_system_time(STREAM* s, SYSTEM_TIME* system_time);
+void rdp_get_client_time_zone(STREAM* s, rdpSettings* settings);
+boolean rdp_read_client_time_zone(STREAM* s, rdpSettings* settings);
+void rdp_write_client_time_zone(STREAM* s, rdpSettings* settings);
+
+#endif /* __TIMEZONE_H */

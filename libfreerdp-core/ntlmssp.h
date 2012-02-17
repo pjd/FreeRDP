@@ -20,7 +20,7 @@
 #ifndef __NTLMSSP_H
 #define __NTLMSSP_H
 
-#include "credssp.h"
+#include <freerdp/crypto/crypto.h>
 
 #include <freerdp/freerdp.h>
 #include <freerdp/utils/blob.h>
@@ -78,6 +78,7 @@ typedef enum _NTLMSSP_STATE NTLMSSP_STATE;
 struct _NTLMSSP
 {
 	NTLMSSP_STATE state;
+	boolean server;
 	rdpBlob password;
 	rdpBlob username;
 	rdpBlob domain;
@@ -118,8 +119,10 @@ void ntlmssp_set_username(NTLMSSP* ntlmssp, char* username);
 void ntlmssp_set_domain(NTLMSSP* ntlmssp, char* domain);
 void ntlmssp_set_password(NTLMSSP* ntlmssp, char* password);
 void ntlmssp_set_workstation(NTLMSSP* ntlmssp, char* workstation);
+void ntlmssp_set_target_name(NTLMSSP* ntlmssp, char* target_name);
 
 void ntlmssp_generate_client_challenge(NTLMSSP* ntlmssp);
+void ntlmssp_generate_server_challenge(NTLMSSP* ntlmssp);
 void ntlmssp_generate_key_exchange_key(NTLMSSP* ntlmssp);
 void ntlmssp_generate_random_session_key(NTLMSSP* ntlmssp);
 void ntlmssp_generate_exported_session_key(NTLMSSP* ntlmssp);
@@ -153,7 +156,8 @@ int ntlmssp_decrypt_message(NTLMSSP* ntlmssp, rdpBlob* encrypted_msg, rdpBlob* m
 int ntlmssp_recv(NTLMSSP* ntlmssp, STREAM* s);
 int ntlmssp_send(NTLMSSP* ntlmssp, STREAM* s);
 
-NTLMSSP* ntlmssp_new();
+NTLMSSP* ntlmssp_client_new();
+NTLMSSP* ntlmssp_server_new();
 void ntlmssp_init(NTLMSSP* ntlmssp);
 void ntlmssp_free(NTLMSSP* ntlmssp);
 

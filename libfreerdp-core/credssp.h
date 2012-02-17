@@ -22,9 +22,10 @@
 
 typedef struct rdp_credssp rdpCredssp;
 
-#include "tls.h"
-#include "ber.h"
-#include "crypto.h"
+#include <freerdp/crypto/tls.h>
+#include <freerdp/crypto/ber.h>
+#include <freerdp/crypto/crypto.h>
+
 #include "transport.h"
 #include <freerdp/settings.h>
 #include <freerdp/utils/blob.h>
@@ -36,6 +37,7 @@ typedef struct rdp_credssp rdpCredssp;
 
 struct rdp_credssp
 {
+	boolean server;
 	rdpBlob negoToken;
 	rdpBlob pubKeyAuth;
 	rdpBlob authInfo;
