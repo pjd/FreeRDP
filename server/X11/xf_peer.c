@@ -249,7 +249,7 @@ xfInfo* xf_info_init()
 
 	xfi->bytesPerPixel = 4;
 
-	freerdp_kbd_init(xfi->display, 0);
+	freerdp_keyboard_init(0);
 
 	return xfi;
 }
@@ -627,8 +627,7 @@ void* xf_peer_main_loop(void* arg)
 	settings->cert_file = freerdp_construct_path(server_file_path, "server.crt");
 	settings->privatekey_file = freerdp_construct_path(server_file_path, "server.key");
 
-	//settings->nla_security = false;
-	settings->nla_security = true;
+	settings->nla_security = false;
 
 	settings->rfx_codec = true;
 

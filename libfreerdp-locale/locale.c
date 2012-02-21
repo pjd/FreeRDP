@@ -1,8 +1,8 @@
 /**
- * FreeRDP: A Remote Desktop Protocol Client
- * XKB-based Keyboard Mapping to Microsoft Keyboard System
+ * FreeRDP: A Remote Desktop Protocol Implementation
+ * Microsoft Locales
  *
- * Copyright 2009 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+ * Copyright 2009-2012 Marc-Andre Moreau <marcandre.moreau@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,29 +20,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "libkbd.h"
+#include "liblocale.h"
 
-#include <freerdp/locale/locales.h>
+#include <freerdp/locale/locale.h>
 
-typedef struct
+struct _SYSTEM_LOCALE
 {
-	/* Two or three letter language code */
-	char language[4];
-
-	/* Two or three letter country code (Sometimes with Cyrl_ prefix) */
-	char country[10];
-
-	/* 32-bit unsigned integer corresponding to the locale */
-	unsigned int code;
-
-} locale;
+	char language[4]; /* Two or three letter language code */
+	char country[10]; /* Two or three letter country code (Sometimes with Cyrl_ prefix) */
+	uint32 code; /* 32-bit unsigned integer corresponding to the locale */
+};
+typedef struct _SYSTEM_LOCALE SYSTEM_LOCALE;
 
 /*
  * Refer to MSDN article "Locale Identifier Constants and Strings":
  * http://msdn.microsoft.com/en-us/library/ms776260.aspx
  */
 
-static const locale locales[] =
+static const SYSTEM_LOCALE SYSTEM_LOCALE_TABLE[] =
 {
 	{  "af", "ZA", AFRIKAANS }, /* Afrikaans (South Africa) */
 	{  "sq", "AL", ALBANIAN }, /* Albanian (Albania) */
@@ -245,20 +240,227 @@ static const locale locales[] =
 	{  "zu", "ZA", ZULU } /* Windows XP SP2 and later: Zulu/isiZulu (South Africa) */
 };
 
-
-typedef struct
+struct _LOCALE_NAME
 {
-	/* Locale ID */
-	unsigned int locale;
+	uint32 localeId;
+	const char* name;
+};
+typedef struct _LOCALE_NAME LOCALE_NAME;
 
-	/* Array of associated keyboard layouts */
-	unsigned int keyboardLayouts[5];
+static const LOCALE_NAME LOCALE_NAME_TABLE[] =
+{
+	{ AFRIKAANS, "AFRIKAANS" },
+	{ ALBANIAN, "ALBANIAN" },
+	{ ALSATIAN, "ALSATIAN" },
+	{ AMHARIC, "AMHARIC" },
+	{ ARABIC_SAUDI_ARABIA, "ARABIC_SAUDI_ARABIA" },
+	{ ARABIC_IRAQ, "ARABIC_IRAQ" },
+	{ ARABIC_EGYPT, "ARABIC_EGYPT" },
+	{ ARABIC_LIBYA, "ARABIC_LIBYA" },
+	{ ARABIC_ALGERIA, "ARABIC_ALGERIA" },
+	{ ARABIC_MOROCCO, "ARABIC_MOROCCO" },
+	{ ARABIC_TUNISIA, "ARABIC_TUNISIA" },
+	{ ARABIC_OMAN, "ARABIC_OMAN" },
+	{ ARABIC_YEMEN, "ARABIC_YEMEN" },
+	{ ARABIC_SYRIA, "ARABIC_SYRIA" },
+	{ ARABIC_JORDAN, "ARABIC_JORDAN" },
+	{ ARABIC_LEBANON, "ARABIC_LEBANON" },
+	{ ARABIC_KUWAIT, "ARABIC_KUWAIT" },
+	{ ARABIC_UAE, "ARABIC_UAE" },
+	{ ARABIC_BAHRAIN, "ARABIC_BAHRAIN" },
+	{ ARABIC_QATAR, "ARABIC_QATAR" },
+	{ ARMENIAN, "ARMENIAN" },
+	{ ASSAMESE, "ASSAMESE" },
+	{ AZERI_LATIN, "AZERI_LATIN" },
+	{ AZERI_CYRILLIC, "AZERI_CYRILLIC" },
+	{ BASHKIR, "BASHKIR" },
+	{ BASQUE, "BASQUE" },
+	{ BELARUSIAN, "BELARUSIAN" },
+	{ BENGALI_INDIA, "BENGALI_INDIA" },
+	{ BOSNIAN_LATIN, "BOSNIAN_LATIN" },
+	{ BRETON, "BRETON" },
+	{ BULGARIAN, "BULGARIAN" },
+	{ CATALAN, "CATALAN" },
+	{ CHINESE_TAIWAN, "CHINESE_TAIWAN" },
+	{ CHINESE_PRC, "CHINESE_PRC" },
+	{ CHINESE_HONG_KONG, "CHINESE_HONG_KONG" },
+	{ CHINESE_SINGAPORE, "CHINESE_SINGAPORE" },
+	{ CHINESE_MACAU, "CHINESE_MACAU" },
+	{ CROATIAN, "CROATIAN" },
+	{ CROATIAN_BOSNIA_HERZEGOVINA, "CROATIAN_BOSNIA_HERZEGOVINA" },
+	{ CZECH, "CZECH" },
+	{ DANISH, "DANISH" },
+	{ DARI, "DARI" },
+	{ DIVEHI, "DIVEHI" },
+	{ DUTCH_STANDARD, "DUTCH_STANDARD" },
+	{ DUTCH_BELGIAN, "DUTCH_BELGIAN" },
+	{ ENGLISH_UNITED_STATES, "ENGLISH_UNITED_STATES" },
+	{ ENGLISH_UNITED_KINGDOM, "ENGLISH_UNITED_KINGDOM" },
+	{ ENGLISH_AUSTRALIAN, "ENGLISH_AUSTRALIAN" },
+	{ ENGLISH_CANADIAN, "ENGLISH_CANADIAN" },
+	{ ENGLISH_NEW_ZEALAND, "ENGLISH_NEW_ZEALAND" },
+	{ ENGLISH_INDIA, "ENGLISH_INDIA" },
+	{ ENGLISH_IRELAND, "ENGLISH_IRELAND" },
+	{ ENGLISH_MALAYSIA, "ENGLISH_MALAYSIA" },
+	{ ENGLISH_SOUTH_AFRICA, "ENGLISH_SOUTH_AFRICA" },
+	{ ENGLISH_JAMAICA, "ENGLISH_JAMAICA" },
+	{ ENGLISH_CARIBBEAN, "ENGLISH_CARIBBEAN" },
+	{ ENGLISH_BELIZE, "ENGLISH_BELIZE" },
+	{ ENGLISH_TRINIDAD, "ENGLISH_TRINIDAD" },
+	{ ENGLISH_ZIMBABWE, "ENGLISH_ZIMBABWE" },
+	{ ENGLISH_PHILIPPINES, "ENGLISH_PHILIPPINES" },
+	{ ENGLISH_SINGAPORE, "ENGLISH_SINGAPORE" },
+	{ ESTONIAN, "ESTONIAN" },
+	{ FAEROESE, "FAEROESE" },
+	{ FARSI, "FARSI" },
+	{ FILIPINO, "FILIPINO" },
+	{ FINNISH, "FINNISH" },
+	{ FRENCH_STANDARD, "FRENCH_STANDARD" },
+	{ FRENCH_BELGIAN, "FRENCH_BELGIAN" },
+	{ FRENCH_CANADIAN, "FRENCH_CANADIAN" },
+	{ FRENCH_SWISS, "FRENCH_SWISS" },
+	{ FRENCH_LUXEMBOURG, "FRENCH_LUXEMBOURG" },
+	{ FRENCH_MONACO, "FRENCH_MONACO" },
+	{ FRISIAN, "FRISIAN" },
+	{ GEORGIAN, "GEORGIAN" },
+	{ GALICIAN, "GALICIAN" },
+	{ GERMAN_STANDARD, "GERMAN_STANDARD" },
+	{ GERMAN_SWISS, "GERMAN_SWISS" },
+	{ GERMAN_AUSTRIAN, "GERMAN_AUSTRIAN" },
+	{ GERMAN_LUXEMBOURG, "GERMAN_LUXEMBOURG" },
+	{ GERMAN_LIECHTENSTEIN, "GERMAN_LIECHTENSTEIN" },
+	{ GREEK, "GREEK" },
+	{ GREENLANDIC, "GREENLANDIC" },
+	{ GUJARATI, "GUJARATI" },
+	{ HEBREW, "HEBREW" },
+	{ HINDI, "HINDI" },
+	{ HUNGARIAN, "HUNGARIAN" },
+	{ ICELANDIC, "ICELANDIC" },
+	{ IGBO, "IGBO" },
+	{ INDONESIAN, "INDONESIAN" },
+	{ IRISH, "IRISH" },
+	{ ITALIAN_STANDARD, "ITALIAN_STANDARD" },
+	{ ITALIAN_SWISS, "ITALIAN_SWISS" },
+	{ JAPANESE, "JAPANESE" },
+	{ KANNADA, "KANNADA" },
+	{ KAZAKH, "KAZAKH" },
+	{ KHMER, "KHMER" },
+	{ KICHE, "KICHE" },
+	{ KINYARWANDA, "KINYARWANDA" },
+	{ KONKANI, "KONKANI" },
+	{ KOREAN, "KOREAN" },
+	{ KYRGYZ, "KYRGYZ" },
+	{ LAO, "LAO" },
+	{ LATVIAN, "LATVIAN" },
+	{ LITHUANIAN, "LITHUANIAN" },
+	{ LOWER_SORBIAN, "LOWER_SORBIAN" },
+	{ LUXEMBOURGISH, "LUXEMBOURGISH" },
+	{ MACEDONIAN, "MACEDONIAN" },
+	{ MALAY_MALAYSIA, "MALAY_MALAYSIA" },
+	{ MALAY_BRUNEI_DARUSSALAM, "MALAY_BRUNEI_DARUSSALAM" },
+	{ MALAYALAM, "MALAYALAM" },
+	{ MALTESE, "MALTESE" },
+	{ MAPUDUNGUN, "MAPUDUNGUN" },
+	{ MAORI, "MAORI" },
+	{ MARATHI, "MARATHI" },
+	{ MOHAWK, "MOHAWK" },
+	{ MONGOLIAN, "MONGOLIAN" },
+	{ NEPALI, "NEPALI" },
+	{ NORWEGIAN_BOKMAL, "NORWEGIAN_BOKMAL" },
+	{ NORWEGIAN_NYNORSK, "NORWEGIAN_NYNORSK" },
+	{ OCCITAN, "OCCITAN" },
+	{ ORIYA, "ORIYA" },
+	{ PASHTO, "PASHTO" },
+	{ POLISH, "POLISH" },
+	{ PORTUGUESE_BRAZILIAN, "PORTUGUESE_BRAZILIAN" },
+	{ PORTUGUESE_STANDARD, "PORTUGUESE_STANDARD" },
+	{ PUNJABI, "PUNJABI" },
+	{ QUECHUA_BOLIVIA, "QUECHUA_BOLIVIA" },
+	{ QUECHUA_ECUADOR, "QUECHUA_ECUADOR" },
+	{ QUECHUA_PERU, "QUECHUA_PERU" },
+	{ ROMANIAN, "ROMANIAN" },
+	{ ROMANSH, "ROMANSH" },
+	{ RUSSIAN, "RUSSIAN" },
+	{ SAMI_INARI, "SAMI_INARI" },
+	{ SAMI_LULE_NORWAY, "SAMI_LULE_NORWAY" },
+	{ SAMI_LULE_SWEDEN, "SAMI_LULE_SWEDEN" },
+	{ SAMI_NORTHERN_FINLAND, "SAMI_NORTHERN_FINLAND" },
+	{ SAMI_NORTHERN_NORWAY, "SAMI_NORTHERN_NORWAY" },
+	{ SAMI_NORTHERN_SWEDEN, "SAMI_NORTHERN_SWEDEN" },
+	{ SAMI_SKOLT, "SAMI_SKOLT" },
+	{ SAMI_SOUTHERN_NORWAY, "SAMI_SOUTHERN_NORWAY" },
+	{ SAMI_SOUTHERN_SWEDEN, "SAMI_SOUTHERN_SWEDEN" },
+	{ SANSKRIT, "SANSKRIT" },
+	{ SERBIAN_LATIN, "SERBIAN_LATIN" },
+	{ SERBIAN_LATIN_BOSNIA_HERZEGOVINA, "SERBIAN_LATIN_BOSNIA_HERZEGOVINA" },
+	{ SERBIAN_CYRILLIC, "SERBIAN_CYRILLIC" },
+	{ SERBIAN_CYRILLIC_BOSNIA_HERZEGOVINA, "SERBIAN_CYRILLIC_BOSNIA_HERZEGOVINA" },
+	{ SESOTHO_SA_LEBOA, "SESOTHO_SA_LEBOA" },
+	{ SINHALA, "SINHALA" },
+	{ SLOVAK, "SLOVAK" },
+	{ SLOVENIAN, "SLOVENIAN" },
+	{ SPANISH_TRADITIONAL_SORT, "SPANISH_TRADITIONAL_SORT" },
+	{ SPANISH_MEXICAN, "SPANISH_MEXICAN" },
+	{ SPANISH_MODERN_SORT, "SPANISH_MODERN_SORT" },
+	{ SPANISH_GUATEMALA, "SPANISH_GUATEMALA" },
+	{ SPANISH_COSTA_RICA, "SPANISH_COSTA_RICA" },
+	{ SPANISH_PANAMA, "SPANISH_PANAMA" },
+	{ SPANISH_DOMINICAN_REPUBLIC, "SPANISH_DOMINICAN_REPUBLIC" },
+	{ SPANISH_VENEZUELA, "SPANISH_VENEZUELA" },
+	{ SPANISH_COLOMBIA, "SPANISH_COLOMBIA" },
+	{ SPANISH_PERU, "SPANISH_PERU" },
+	{ SPANISH_ARGENTINA, "SPANISH_ARGENTINA" },
+	{ SPANISH_ECUADOR, "SPANISH_ECUADOR" },
+	{ SPANISH_CHILE, "SPANISH_CHILE" },
+	{ SPANISH_UNITED_STATES, "SPANISH_UNITED_STATES" },
+	{ SPANISH_URUGUAY, "SPANISH_URUGUAY" },
+	{ SPANISH_PARAGUAY, "SPANISH_PARAGUAY" },
+	{ SPANISH_BOLIVIA, "SPANISH_BOLIVIA" },
+	{ SPANISH_EL_SALVADOR, "SPANISH_EL_SALVADOR" },
+	{ SPANISH_HONDURAS, "SPANISH_HONDURAS" },
+	{ SPANISH_NICARAGUA, "SPANISH_NICARAGUA" },
+	{ SPANISH_PUERTO_RICO, "SPANISH_PUERTO_RICO" },
+	{ SWAHILI, "SWAHILI" },
+	{ SWEDISH, "SWEDISH" },
+	{ SWEDISH_FINLAND, "SWEDISH_FINLAND" },
+	{ SYRIAC, "SYRIAC" },
+	{ TAMIL, "TAMIL" },
+	{ TATAR, "TATAR" },
+	{ TELUGU, "TELUGU" },
+	{ THAI, "THAI" },
+	{ TIBETAN_BHUTAN, "TIBETAN_BHUTAN" },
+	{ TIBETAN_PRC, "TIBETAN_PRC" },
+	{ TSWANA, "TSWANA" },
+	{ UKRAINIAN, "UKRAINIAN" },
+	{ TURKISH, "TURKISH" },
+	{ TURKMEN, "TURKMEN" },
+	{ UIGHUR, "UIGHUR" },
+	{ UPPER_SORBIAN, "UPPER_SORBIAN" },
+	{ URDU, "URDU" },
+	{ URDU_INDIA, "URDU_INDIA" },
+	{ UZBEK_LATIN, "UZBEK_LATIN" },
+	{ UZBEK_CYRILLIC, "UZBEK_CYRILLIC" },
+	{ VIETNAMESE, "VIETNAMESE" },
+	{ WELSH, "WELSH" },
+	{ WOLOF, "WOLOF" },
+	{ XHOSA, "XHOSA" },
+	{ YAKUT, "YAKUT" },
+	{ YI, "YI" },
+	{ YORUBA, "YORUBA" },
+	{ ZULU, "ZULU" }
+};
 
-} localeAndKeyboardLayout;
+struct _LOCALE_KEYBOARD_LAYOUTS
+{
+	uint32 locale; /* Locale ID */
+	uint32 keyboardLayouts[5]; /* array of associated keyboard layouts */
+
+};
+typedef struct _LOCALE_KEYBOARD_LAYOUTS LOCALE_KEYBOARD_LAYOUTS;
 
 /* TODO: Use KBD_* defines instead of hardcoded values */
 
-static const localeAndKeyboardLayout defaultKeyboardLayouts[] =
+static const LOCALE_KEYBOARD_LAYOUTS LOCALE_KEYBOARD_LAYOUTS_TABLE[] =
 {
 	{ AFRIKAANS,				{ 0x00000409, 0x00000409, 0x0, 0x0, 0x0 } },
 	{ ALBANIAN,				{ 0x0000041c, 0x00000409, 0x0, 0x0, 0x0 } },
@@ -421,76 +623,130 @@ static const localeAndKeyboardLayout defaultKeyboardLayouts[] =
 	{ XHOSA,				{ 0x00000409, 0x00000409, 0x0, 0x0, 0x0 } },
 };
 
-unsigned int detect_keyboard_layout_from_locale()
+boolean freerdp_get_system_language_and_country_codes(char* language, char* country)
 {
 	int dot;
-	int i, j, k;
 	int underscore;
-	char language[4];
-	char country[10];
+	char* env_lang;
 
 	/* LANG = <language>_<country>.<encoding> */
-	char* envLang = getenv("LANG"); /* Get locale from environment variable LANG */
+	env_lang = getenv("LANG"); /* Get locale from environment variable LANG */
 
-	if (envLang == NULL)
-		return 0; /* LANG environment variable was not set */
+	if (env_lang == NULL)
+		return false; /* LANG environment variable was not set */
 
-	underscore = strcspn(envLang, "_");
+	underscore = strcspn(env_lang, "_");
 
 	if (underscore > 3)
-		return 0; /* The language name should not be more than 3 letters long */
+	{
+		return false; /* The language name should not be more than 3 letters long */
+	}
 	else
 	{
 		/* Get language code */
-		strncpy(language, envLang, underscore);
+		strncpy(language, env_lang, underscore);
 		language[underscore] = '\0';
 	}
 
-	/*
-	 * There is always the special case of "C" or "POSIX" as locale name
-	 * In this case, use a U.S. keyboard and a U.S. keyboard layout
-	 */
-
-	if ((strcmp(language, "C") == 0) || (strcmp(language, "POSIX") == 0))
-		return ENGLISH_UNITED_STATES; /* U.S. Keyboard Layout */
-
-	dot = strcspn(envLang, ".");
+	dot = strcspn(env_lang, ".");
 
 	/* Get country code */
 	if (dot > underscore)
 	{
-		strncpy(country, &envLang[underscore + 1], dot - underscore - 1);
+		strncpy(country, &env_lang[underscore + 1], dot - underscore - 1);
 		country[dot - underscore - 1] = '\0';
 	}
 	else
-		return 0; /* Invalid locale */
-
-	for (i = 0; i < sizeof(locales) / sizeof(locale); i++)
 	{
-		if ((strcmp(language, locales[i].language) == 0) && (strcmp(country, locales[i].country) == 0))
-			break;
+		return false; /* Invalid locale */
 	}
 
-	DEBUG_KBD("Found locale : %s_%s", locales[i].language, locales[i].country);
+	return true;
+}
 
-	for (j = 0; j < sizeof(defaultKeyboardLayouts) / sizeof(localeAndKeyboardLayout); j++)
+SYSTEM_LOCALE* freerdp_detect_system_locale()
+{
+	int i;
+	char language[4];
+	char country[10];
+	SYSTEM_LOCALE* locale = NULL;
+
+	freerdp_get_system_language_and_country_codes(language, country);
+
+	for (i = 0; i < sizeof(SYSTEM_LOCALE_TABLE) / sizeof(SYSTEM_LOCALE); i++)
 	{
-		if (defaultKeyboardLayouts[j].locale == locales[i].code)
+		if ((strcmp(language, SYSTEM_LOCALE_TABLE[i].language) == 0) && (strcmp(country, SYSTEM_LOCALE_TABLE[i].country) == 0))
+		{
+			locale = (SYSTEM_LOCALE*) &SYSTEM_LOCALE_TABLE[i];
+			break;
+		}
+	}
+
+	return locale;
+}
+
+uint32 freerdp_get_system_locale_id()
+{
+	SYSTEM_LOCALE* locale;
+
+	locale = freerdp_detect_system_locale();
+
+	if (locale != NULL)
+		return locale->code;
+
+	return 0;
+}
+
+const char* freerdp_get_system_locale_name_from_id(uint32 localeId)
+{
+	int index;
+
+	for (index = 0; index < sizeof(LOCALE_NAME_TABLE) / sizeof(LOCALE_NAME); index++)
+	{
+		if (localeId == LOCALE_NAME_TABLE[index].localeId)
+			return LOCALE_NAME_TABLE[index].name;
+	}
+
+	return NULL;
+}
+
+uint32 freerdp_detect_keyboard_layout_from_system_locale()
+{
+	int i, j;
+	char language[4];
+	char country[10];
+	SYSTEM_LOCALE* locale;
+
+	freerdp_get_system_language_and_country_codes(language, country);
+
+	if ((strcmp(language, "C") == 0) || (strcmp(language, "POSIX") == 0))
+		return ENGLISH_UNITED_STATES; /* U.S. Keyboard Layout */
+
+	locale = freerdp_detect_system_locale();
+
+	if (locale == NULL)
+		return 0;
+
+	DEBUG_KBD("Found locale : %s_%s", locale->language, locale->country);
+
+	for (i = 0; i < sizeof(LOCALE_KEYBOARD_LAYOUTS_TABLE) / sizeof(LOCALE_KEYBOARD_LAYOUTS); i++)
+	{
+		if (LOCALE_KEYBOARD_LAYOUTS_TABLE[i].locale == locale->code)
 		{
 			/* Locale found in list of default keyboard layouts */
-			for (k = 0; k < 5; k++)
+			for (j = 0; j < 5; j++)
 			{
-				if (defaultKeyboardLayouts[j].keyboardLayouts[k] == ENGLISH_UNITED_STATES)
+				if (LOCALE_KEYBOARD_LAYOUTS_TABLE[i].keyboardLayouts[j] == ENGLISH_UNITED_STATES)
 				{
 					continue; /* Skip, try to get a more localized keyboard layout */
 				}
-				else if (defaultKeyboardLayouts[j].keyboardLayouts[k] == 0)
+				else if (LOCALE_KEYBOARD_LAYOUTS_TABLE[i].keyboardLayouts[j] == 0)
 				{
 					break; /* No more keyboard layouts */
 				}
 				else
 				{
-					return defaultKeyboardLayouts[j].keyboardLayouts[k];
+					return LOCALE_KEYBOARD_LAYOUTS_TABLE[i].keyboardLayouts[j];
 				}
 			}
 
@@ -499,7 +755,7 @@ unsigned int detect_keyboard_layout_from_locale()
 			 * other possible keyboard layout for the locale, we end up here with k > 1
 			 */
 
-			if (k >= 1)
+			if (j >= 1)
 				return ENGLISH_UNITED_STATES;
 			else
 				return 0;

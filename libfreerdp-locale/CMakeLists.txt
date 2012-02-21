@@ -18,38 +18,58 @@
 # limitations under the License.
 
 set(FREERDP_LOCALE_SRCS
-	locales.c
-	layouts.c
-	layouts_xkb.c
-	layouts_xkb.h
-	x_layout_id_table.c
-	x_layout_id_table.h
-	libkbd.c
-	libkbd.h)
+	keyboard_layout.c
+	keyboard.c
+	locale.c
+	timezone.c
+	liblocale.h)
 
-add_library(freerdp-locale ${FREERDP_LOCALE_SRCS})
+set(FREERDP_LOCALE_X11_SRCS
+	keyboard_x11.c
+	keyboard_x11.h)
 
-find_suggested_package(X11)
-if(WITH_X11)
-	target_link_libraries(freerdp-locale ${X11_LIBRARIES})
+set(FREERDP_LOCALE_XKB_SRCS
+	keyboard_xkb.c
+	keyboard_xkb.h)
+
+set(FREERDP_LOCALE_SUN_SRCS
+	keyboard_sun.c
+	keyboard_sun.h)
+
+if(CMAKE_SYSTEM_NAME MATCHES Solaris)
+	set(WITH_SUN true)
 endif()
 
-if(NOT APPLE)
-	find_suggested_package(XKBFile)
+set(FREERDP_LOCALE_LINK_LIBRARIES freerdp-utils)
+
+if(NOT WIN32)
+	find_suggested_package(X11)
 	if(WITH_X11)
-		if(WITH_XKBFILE)
-			add_definitions(-DWITH_XKBFILE)
-			include_directories(${XKBFILE_INCLUDE_DIRS})
-			target_link_libraries(freerdp-locale ${XKBFILE_LIBRARIES})
+		add_definitions(-DWITH_X11)
+		include_directories(${X11_INCLUDE_DIRS})
+		set(FREERDP_LOCALE_SRCS ${FREERDP_LOCALE_SRCS} ${FREERDP_LOCALE_X11_SRCS})
+		set(FREERDP_LOCALE_LINK_LIBRARIES ${FREERDP_LOCALE_LINK_LIBRARIES} ${X11_LIBRARIES})
+		if(NOT APPLE)
+			find_suggested_package(XKBFile)
+			if(WITH_XKBFILE)
+				add_definitions(-DWITH_XKB)
+				include_directories(${XKBFILE_INCLUDE_DIRS})
+				set(FREERDP_LOCALE_SRCS ${FREERDP_LOCALE_SRCS} ${FREERDP_LOCALE_XKB_SRCS})
+				set(FREERDP_LOCALE_LINK_LIBRARIES ${FREERDP_LOCALE_LINK_LIBRARIES} ${XKBFILE_LIBRARIES})
+			endif()
+		endif()
+		if(WITH_SUN)
+			add_definitions(-DWITH_SUN)
+			set(FREERDP_LOCALE_SRCS ${FREERDP_LOCALE_SRCS} ${FREERDP_LOCALE_SUN_SRCS})
 		endif()
 	endif()
 endif()
 
-add_definitions(-DKEYMAP_PATH="${FREERDP_KEYMAP_PATH}")
+add_library(freerdp-locale ${FREERDP_LOCALE_SRCS})
 
 set_target_properties(freerdp-locale PROPERTIES VERSION ${FREERDP_VERSION_FULL} SOVERSION ${FREERDP_VERSION} PREFIX "lib")
 
-target_link_libraries(freerdp-locale freerdp-utils)
+target_link_libraries(freerdp-locale ${FREERDP_LOCALE_LINK_LIBRARIES})
 
 install(TARGETS freerdp-locale DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
