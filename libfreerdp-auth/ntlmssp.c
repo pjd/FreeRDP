@@ -25,7 +25,10 @@
 #include <openssl/engine.h>
 #include <freerdp/utils/memory.h>
 
+#include <freerdp/auth/sspi.h>
 #include <freerdp/auth/credssp.h>
+
+#include "sspi.h"
 
 #include <freerdp/auth/ntlmssp.h>
 
