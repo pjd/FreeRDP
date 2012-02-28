@@ -106,7 +106,7 @@ void* sspi_ContextBufferAlloc(uint32 allocatorIndex, size_t size)
 	int index;
 	void* contextBuffer;
 
-	for (index = 0; index < ContextBufferAllocTable.cMaxEntries; index++)
+	for (index = 0; index < (int) ContextBufferAllocTable.cMaxEntries; index++)
 	{
 		if (ContextBufferAllocTable.entries[index].contextBuffer == NULL)
 		{
@@ -137,7 +137,7 @@ void sspi_ContextBufferFree(void* contextBuffer)
 	int index;
 	uint32 allocatorIndex;
 
-	for (index = 0; index < ContextBufferAllocTable.cMaxEntries; index++)
+	for (index = 0; index < (int) ContextBufferAllocTable.cMaxEntries; index++)
 	{
 		if (contextBuffer == ContextBufferAllocTable.entries[index].contextBuffer)
 		{
@@ -273,9 +273,9 @@ SECURITY_FUNCTION_TABLE* sspi_GetSecurityFunctionTableByName(const char* Name)
 	int index;
 	uint32 cPackages;
 
-	cPackages = sizeof(SEC_PKG_INFO_LIST) / sizeof(SEC_PKG_INFO*);
+	cPackages = ARRAY_SIZE(SEC_PKG_INFO_LIST);
 
-	for (index = 0; index < cPackages; index++)
+	for (index = 0; index < (int) cPackages; index++)
 	{
 		if (strcmp(Name, SECURITY_FUNCTION_TABLE_NAME_LIST[index].Name) == 0)
 		{
@@ -305,12 +305,12 @@ SECURITY_STATUS EnumerateSecurityPackages(uint32* pcPackages, SEC_PKG_INFO** ppP
 	uint32 cPackages;
 	SEC_PKG_INFO* pPackageInfo;
 
-	cPackages = sizeof(SEC_PKG_INFO_LIST) / sizeof(SEC_PKG_INFO*);
+	cPackages = ARRAY_SIZE(SEC_PKG_INFO_LIST);
 	size = sizeof(SEC_PKG_INFO) * cPackages;
 
 	pPackageInfo = (SEC_PKG_INFO*) sspi_ContextBufferAlloc(EnumerateSecurityPackagesIndex, size);
 
-	for (index = 0; index < cPackages; index++)
+	for (index = 0; index < (int) cPackages; index++)
 	{
 		pPackageInfo[index].fCapabilities = SEC_PKG_INFO_LIST[index]->fCapabilities;
 		pPackageInfo[index].wVersion = SEC_PKG_INFO_LIST[index]->wVersion;
@@ -332,9 +332,9 @@ void FreeContextBuffer_EnumerateSecurityPackages(void* contextBuffer)
 	uint32 cPackages;
 	SEC_PKG_INFO* pPackageInfo = (SEC_PKG_INFO*) contextBuffer;
 
-	cPackages = sizeof(SEC_PKG_INFO_LIST) / sizeof(SEC_PKG_INFO*);
+	cPackages = ARRAY_SIZE(SEC_PKG_INFO_LIST);
 
-	for (index = 0; index < cPackages; index++)
+	for (index = 0; index < (int) cPackages; index++)
 	{
 		if (pPackageInfo[index].Name)
 			xfree(pPackageInfo[index].Name);
@@ -361,9 +361,9 @@ SECURITY_STATUS QuerySecurityPackageInfo(char* pszPackageName, SEC_PKG_INFO** pp
 	uint32 cPackages;
 	SEC_PKG_INFO* pPackageInfo;
 
-	cPackages = sizeof(SEC_PKG_INFO_LIST) / sizeof(SEC_PKG_INFO*);
+	cPackages = ARRAY_SIZE(SEC_PKG_INFO_LIST);
 
-	for (index = 0; index < cPackages; index++)
+	for (index = 0; index < (int) cPackages; index++)
 	{
 		if (strcmp(pszPackageName, SEC_PKG_INFO_LIST[index]->Name) == 0)
 		{
@@ -413,7 +413,7 @@ SECURITY_STATUS AcquireCredentialsHandle(char* pszPrincipal, char* pszPackage,
 	if (!table)
 		return SEC_E_SECPKG_NOT_FOUND;
 
-	if (!(table->AcquireCredentialsHandle))
+	if (table->AcquireCredentialsHandle == NULL)
 		return SEC_E_UNSUPPORTED_FUNCTION;
 
 	status = table->AcquireCredentialsHandle(pszPrincipal, pszPackage, fCredentialUse,
@@ -443,7 +443,7 @@ SECURITY_STATUS FreeCredentialsHandle(CRED_HANDLE* phCredential)
 	if (!table)
 		return SEC_E_SECPKG_NOT_FOUND;
 
-	if (!(table->FreeCredentialsHandle))
+	if (table->FreeCredentialsHandle == NULL)
 		return SEC_E_UNSUPPORTED_FUNCTION;
 
 	status = table->FreeCredentialsHandle(phCredential);
@@ -471,6 +471,9 @@ SECURITY_STATUS QueryCredentialsAttributes(CRED_HANDLE* phCredential, uint32 ulA
 
 	if (!table)
 		return SEC_E_SECPKG_NOT_FOUND;
+
+	if (table->QueryCredentialsAttributes == NULL)
+		return SEC_E_UNSUPPORTED_FUNCTION;
 
 	status = table->QueryCredentialsAttributes(phCredential, ulAttribute, pBuffer);
 
@@ -535,6 +538,9 @@ SECURITY_STATUS InitializeSecurityContext(CRED_HANDLE* phCredential, CTXT_HANDLE
 	if (!table)
 		return SEC_E_SECPKG_NOT_FOUND;
 
+	if (table->InitializeSecurityContext == NULL)
+		return SEC_E_UNSUPPORTED_FUNCTION;
+
 	status = table->InitializeSecurityContext(phCredential, phContext,
 			pszTargetName, fContextReq, Reserved1, TargetDataRep,
 			pInput, Reserved2, phNewContext, pOutput, pfContextAttr, ptsExpiry);
@@ -544,7 +550,26 @@ SECURITY_STATUS InitializeSecurityContext(CRED_HANDLE* phCredential, CTXT_HANDLE
 
 SECURITY_STATUS QueryContextAttributes(CTXT_HANDLE* phContext, uint32 ulAttribute, void* pBuffer)
 {
-	return SEC_E_OK;
+	char* Name;
+	SECURITY_STATUS status;
+	SECURITY_FUNCTION_TABLE* table;
+
+	Name = (char*) sspi_SecureHandleGetUpperPointer(phContext);
+
+	if (!Name)
+		return SEC_E_SECPKG_NOT_FOUND;
+
+	table = sspi_GetSecurityFunctionTableByName(Name);
+
+	if (!table)
+		return SEC_E_SECPKG_NOT_FOUND;
+
+	if (table->QueryContextAttributes == NULL)
+		return SEC_E_UNSUPPORTED_FUNCTION;
+
+	status = table->QueryContextAttributes(phContext, ulAttribute, pBuffer);
+
+	return status;
 }
 
 SECURITY_STATUS QuerySecurityContextToken(CTXT_HANDLE* phContext, void* phToken)
@@ -566,22 +591,98 @@ SECURITY_STATUS RevertSecurityContext(CTXT_HANDLE* phContext)
 
 SECURITY_STATUS DecryptMessage(CTXT_HANDLE* phContext, SEC_BUFFER_DESC* pMessage, uint32 MessageSeqNo, uint32* pfQOP)
 {
-	return SEC_E_OK;
+	char* Name;
+	SECURITY_STATUS status;
+	SECURITY_FUNCTION_TABLE* table;
+
+	Name = (char*) sspi_SecureHandleGetUpperPointer(phContext);
+
+	if (!Name)
+		return SEC_E_SECPKG_NOT_FOUND;
+
+	table = sspi_GetSecurityFunctionTableByName(Name);
+
+	if (!table)
+		return SEC_E_SECPKG_NOT_FOUND;
+
+	if (table->DecryptMessage == NULL)
+		return SEC_E_UNSUPPORTED_FUNCTION;
+
+	status = table->DecryptMessage(phContext, pMessage, MessageSeqNo, pfQOP);
+
+	return status;
 }
 
 SECURITY_STATUS EncryptMessage(CTXT_HANDLE* phContext, uint32 fQOP, SEC_BUFFER_DESC* pMessage, uint32 MessageSeqNo)
 {
-	return SEC_E_OK;
+	char* Name;
+	SECURITY_STATUS status;
+	SECURITY_FUNCTION_TABLE* table;
+
+	Name = (char*) sspi_SecureHandleGetUpperPointer(phContext);
+
+	if (!Name)
+		return SEC_E_SECPKG_NOT_FOUND;
+
+	table = sspi_GetSecurityFunctionTableByName(Name);
+
+	if (!table)
+		return SEC_E_SECPKG_NOT_FOUND;
+
+	if (table->EncryptMessage == NULL)
+		return SEC_E_UNSUPPORTED_FUNCTION;
+
+	status = table->EncryptMessage(phContext, fQOP, pMessage, MessageSeqNo);
+
+	return status;
 }
 
 SECURITY_STATUS MakeSignature(CTXT_HANDLE* phContext, uint32 fQOP, SEC_BUFFER_DESC* pMessage, uint32 MessageSeqNo)
 {
-	return SEC_E_OK;
+	char* Name;
+	SECURITY_STATUS status;
+	SECURITY_FUNCTION_TABLE* table;
+
+	Name = (char*) sspi_SecureHandleGetUpperPointer(phContext);
+
+	if (!Name)
+		return SEC_E_SECPKG_NOT_FOUND;
+
+	table = sspi_GetSecurityFunctionTableByName(Name);
+
+	if (!table)
+		return SEC_E_SECPKG_NOT_FOUND;
+
+	if (table->MakeSignature == NULL)
+		return SEC_E_UNSUPPORTED_FUNCTION;
+
+	status = table->MakeSignature(phContext, fQOP, pMessage, MessageSeqNo);
+
+	return status;
 }
 
 SECURITY_STATUS VerifySignature(CTXT_HANDLE* phContext, SEC_BUFFER_DESC* pMessage, uint32 MessageSeqNo, uint32* pfQOP)
 {
-	return SEC_E_OK;
+	char* Name;
+	SECURITY_STATUS status;
+	SECURITY_FUNCTION_TABLE* table;
+
+	Name = (char*) sspi_SecureHandleGetUpperPointer(phContext);
+
+	if (!Name)
+		return SEC_E_SECPKG_NOT_FOUND;
+
+	table = sspi_GetSecurityFunctionTableByName(Name);
+
+	if (!table)
+		return SEC_E_SECPKG_NOT_FOUND;
+
+	if (table->VerifySignature == NULL)
+		return SEC_E_UNSUPPORTED_FUNCTION;
+
+	status = table->VerifySignature(phContext, pMessage, MessageSeqNo, pfQOP);
+
+	return status;
 }
 
 const SECURITY_FUNCTION_TABLE SSPI_SECURITY_FUNCTION_TABLE =
