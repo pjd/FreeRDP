@@ -62,6 +62,8 @@ add_executable(test_freerdp
 	test_drdynvc.h
 	test_rfx.c
 	test_rfx.h
+	test_nsc.c
+	test_nsc.h
 	test_sspi.c
 	test_sspi.h
 	test_freerdp.c
@@ -78,6 +80,6 @@ target_link_libraries(test_freerdp freerdp-utils)
 target_link_libraries(test_freerdp freerdp-channels)
 target_link_libraries(test_freerdp freerdp-codec)
 target_link_libraries(test_freerdp freerdp-crypto)
-target_link_libraries(test_freerdp freerdp-auth)
+target_link_libraries(test_freerdp freerdp-sspi)
 
 add_test(CUnitTests ${EXECUTABLE_OUTPUT_PATH}/test_freerdp)

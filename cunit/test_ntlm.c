@@ -20,11 +20,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <freerdp/freerdp.h>
-#include <freerdp/auth/sspi.h>
+#include <freerdp/sspi/sspi.h>
 
-#include "libfreerdp-auth/NTLM/ntlm.h"
-#include "libfreerdp-auth/NTLM/ntlm_compute.h"
-#include "libfreerdp-auth/NTLM/ntlm_message.h"
+#include "libfreerdp-sspi/NTLM/ntlm.h"
+#include "libfreerdp-sspi/NTLM/ntlm_compute.h"
+#include "libfreerdp-sspi/NTLM/ntlm_message.h"
 
 #include "test_ntlm.h"
 

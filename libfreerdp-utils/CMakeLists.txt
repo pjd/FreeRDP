@@ -45,7 +45,9 @@ set(FREERDP_UTILS_SRCS
 	stream.c
 	string.c
 	svc_plugin.c
+	tcp.c
 	thread.c
+	time.c
 	unicode.c
 	wait_obj.c)
 
