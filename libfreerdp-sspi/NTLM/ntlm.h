@@ -77,25 +77,30 @@ typedef enum _AV_ID AV_ID;
 
 struct _NTLM_CONTEXT
 {
+	boolean server;
 	boolean ntlm_v2;
 	NTLM_STATE state;
 	UNICONV* uniconv;
-	int send_seq_num;
-	int recv_seq_num;
+	int SendSeqNum;
+	int RecvSeqNum;
+	CryptoRc4 SendRc4Seal;
+	CryptoRc4 RecvRc4Seal;
+	uint8* SendSigningKey;
+	uint8* RecvSigningKey;
+	uint8* SendSealingKey;
+	uint8* RecvSealingKey;
 	AV_PAIRS* av_pairs;
-	CryptoRc4 send_rc4_seal;
-	CryptoRc4 recv_rc4_seal;
 	uint32 NegotiateFlags;
 	uint16* Workstation;
 	uint32 WorkstationLength;
-	SEC_AUTH_IDENTITY identity;
-	SEC_BUFFER NegotiateMessage;
-	SEC_BUFFER ChallengeMessage;
-	SEC_BUFFER AuthenticateMessage;
-	SEC_BUFFER TargetInfo;
-	SEC_BUFFER TargetName;
-	SEC_BUFFER NtChallengeResponse;
-	SEC_BUFFER LmChallengeResponse;
+	SEC_WINNT_AUTH_IDENTITY identity;
+	SecBuffer NegotiateMessage;
+	SecBuffer ChallengeMessage;
+	SecBuffer AuthenticateMessage;
+	SecBuffer TargetInfo;
+	SecBuffer TargetName;
+	SecBuffer NtChallengeResponse;
+	SecBuffer LmChallengeResponse;
 	uint8 Timestamp[8];
 	uint8 ServerChallenge[8];
 	uint8 ClientChallenge[8];
@@ -115,6 +120,8 @@ typedef struct _NTLM_CONTEXT NTLM_CONTEXT;
 NTLM_CONTEXT* ntlm_ContextNew();
 void ntlm_ContextFree(NTLM_CONTEXT* context);
 
-//#define WITH_DEBUG_NTLM		1
+#ifdef WITH_DEBUG_NLA
+#define WITH_DEBUG_NTLM
+#endif
 
 #endif /* FREERDP_SSPI_NTLM_PRIVATE_H */

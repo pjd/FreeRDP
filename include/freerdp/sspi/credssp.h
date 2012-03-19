@@ -39,19 +39,20 @@ struct rdp_credssp
 	rdpTls* tls;
 	boolean server;
 	int send_seq_num;
+	int recv_seq_num;
 	UNICONV* uniconv;
 	freerdp* instance;
-	CTXT_HANDLE context;
+	CtxtHandle context;
 	rdpSettings* settings;
-	SEC_BUFFER negoToken;
-	SEC_BUFFER pubKeyAuth;
-	SEC_BUFFER authInfo;
-	SEC_BUFFER PublicKey;
-	SEC_BUFFER ts_credentials;
+	SecBuffer negoToken;
+	SecBuffer pubKeyAuth;
+	SecBuffer authInfo;
+	SecBuffer PublicKey;
+	SecBuffer ts_credentials;
 	CryptoRc4 rc4_seal_state;
-	SEC_AUTH_IDENTITY identity;
-	SECURITY_FUNCTION_TABLE* table;
-	SEC_PKG_CONTEXT_SIZES ContextSizes;
+	SEC_WINNT_AUTH_IDENTITY identity;
+	SecurityFunctionTable* table;
+	SecPkgContext_Sizes ContextSizes;
 };
 
 FREERDP_API int credssp_authenticate(rdpCredssp* credssp);
@@ -59,6 +60,7 @@ FREERDP_API int credssp_authenticate(rdpCredssp* credssp);
 FREERDP_API void credssp_send(rdpCredssp* credssp);
 FREERDP_API int credssp_recv(rdpCredssp* credssp);
 
+FREERDP_API void credssp_buffer_print(rdpCredssp* credssp);
 FREERDP_API void credssp_buffer_free(rdpCredssp* credssp);
 
 SECURITY_STATUS credssp_verify_public_key_echo(rdpCredssp* credssp);

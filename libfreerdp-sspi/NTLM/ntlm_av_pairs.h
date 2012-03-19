@@ -1,6 +1,6 @@
 /**
  * FreeRDP: A Remote Desktop Protocol Implementation
- * NTLM Security Package (Message)
+ * NTLM Security Package (AV_PAIRs)
  *
  * Copyright 2011-2012 Marc-Andre Moreau <marcandre.moreau@gmail.com>
  *
@@ -17,16 +17,16 @@
  * limitations under the License.
  */
 
-#ifndef FREERDP_SSPI_NTLM_MESSAGE_H
-#define FREERDP_SSPI_NTLM_MESSAGE_H
+#ifndef FREERDP_SSPI_NTLM_AV_PAIRS_H
+#define FREERDP_SSPI_NTLM_AV_PAIRS_H
 
 #include "ntlm.h"
 
-SECURITY_STATUS ntlm_read_NegotiateMessage(NTLM_CONTEXT* context, SecBuffer* buffer);
-SECURITY_STATUS ntlm_write_NegotiateMessage(NTLM_CONTEXT* context, SecBuffer* buffer);
-SECURITY_STATUS ntlm_read_ChallengeMessage(NTLM_CONTEXT* context, SecBuffer* buffer);
-SECURITY_STATUS ntlm_write_ChallengeMessage(NTLM_CONTEXT* context, SecBuffer* buffer);
-SECURITY_STATUS ntlm_read_AuthenticateMessage(NTLM_CONTEXT* context, SecBuffer* buffer);
-SECURITY_STATUS ntlm_write_AuthenticateMessage(NTLM_CONTEXT* context, SecBuffer* buffer);
+void ntlm_input_av_pairs(NTLM_CONTEXT* context, STREAM* s);
+void ntlm_output_av_pairs(NTLM_CONTEXT* context, SecBuffer* buffer);
+void ntlm_populate_av_pairs(NTLM_CONTEXT* context);
+void ntlm_populate_server_av_pairs(NTLM_CONTEXT* context);
+void ntlm_print_av_pairs(NTLM_CONTEXT* context);
+void ntlm_free_av_pairs(NTLM_CONTEXT* context);
 
-#endif /* FREERDP_SSPI_NTLM_MESSAGE_H */
+#endif /* FREERDP_SSPI_NTLM_AV_PAIRS_H */

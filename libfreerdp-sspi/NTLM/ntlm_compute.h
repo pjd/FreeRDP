@@ -22,15 +22,11 @@
 
 #include "ntlm.h"
 
+#include "ntlm_av_pairs.h"
+
 void ntlm_output_restriction_encoding(NTLM_CONTEXT* context);
 void ntlm_output_target_name(NTLM_CONTEXT* context);
 void ntlm_output_channel_bindings(NTLM_CONTEXT* context);
-
-void ntlm_input_av_pairs(NTLM_CONTEXT* context, STREAM* s);
-void ntlm_output_av_pairs(NTLM_CONTEXT* context, SEC_BUFFER* buffer);
-void ntlm_populate_av_pairs(NTLM_CONTEXT* context);
-void ntlm_print_av_pairs(NTLM_CONTEXT* context);
-void ntlm_free_av_pairs(NTLM_CONTEXT* context);
 
 void ntlm_current_time(uint8* timestamp);
 void ntlm_generate_timestamp(NTLM_CONTEXT* context);
@@ -47,6 +43,7 @@ void ntlm_generate_key_exchange_key(NTLM_CONTEXT* context);
 void ntlm_generate_random_session_key(NTLM_CONTEXT* context);
 void ntlm_generate_exported_session_key(NTLM_CONTEXT* context);
 void ntlm_encrypt_random_session_key(NTLM_CONTEXT* context);
+void ntlm_decrypt_random_session_key(NTLM_CONTEXT* context);
 
 void ntlm_generate_client_signing_key(NTLM_CONTEXT* context);
 void ntlm_generate_server_signing_key(NTLM_CONTEXT* context);

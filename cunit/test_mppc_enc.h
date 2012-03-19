@@ -1,8 +1,8 @@
 /**
  * FreeRDP: A Remote Desktop Protocol Client
- * Remote Applications Integrated Locally (RAIL)
+ * Microsoft Point to Point compression (MPPC) Unit Tests
  *
- * Copyright 2011 Marc-Andre Moreau <marcandre.moreau@gmail.com>
+ * Copyright 2012 Laxmikant Rashinkar <LK.Rashinkar@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef __LIBRAIL_H
-#define __LIBRAIL_H
+#include "test_freerdp.h"
 
-#include "config.h"
-#include <freerdp/utils/debug.h>
+int init_mppc_enc_suite(void);
+int clean_mppc_enc_suite(void);
+int add_mppc_enc_suite(void);
 
-#ifdef WITH_DEBUG_RAIL
-#define DEBUG_RAIL(fmt, ...) DEBUG_CLASS(RAIL, fmt, ## __VA_ARGS__)
-#else
-#define DEBUG_RAIL(fmt, ...) DEBUG_NULL(fmt, ## __VA_ARGS__)
-#endif
-
-#endif /* __LIBRAIL_H */
+void test_mppc_enc(void);
