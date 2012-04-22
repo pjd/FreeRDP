@@ -1,6 +1,6 @@
 /**
  * FreeRDP: A Remote Desktop Protocol Implementation
- * Solaris Keyboard Mapping
+ * XKB Keyboard Mapping
  *
  * Copyright 2009-2012 Marc-Andre Moreau <marcandre.moreau@gmail.com>
  *
@@ -17,9 +17,14 @@
  * limitations under the License.
  */
 
-#ifndef __LOCALE_KEYBOARD_SUN_H
-#define __LOCALE_KEYBOARD_SUN_H
+#ifndef __LOCALE_KEYBOARD_XKB_H
+#define __LOCALE_KEYBOARD_XKB_H
 
-uint32 freerdp_detect_keyboard_type_and_layout_solaris(char* keyboard_type, int length);
+#include <freerdp/types.h>
+#include <freerdp/locale/keyboard.h>
 
-#endif /* __LOCALE_KEYBOARD_SUN_H */
+uint32 freerdp_keyboard_init_xkbfile(uint32 keyboardLayoutId, RDP_SCANCODE x11_keycode_to_rdp_scancode[256]);
+uint32 detect_keyboard_layout_from_xkbfile(void* display);
+int freerdp_keyboard_load_map_from_xkbfile(void* display, RDP_SCANCODE x11_keycode_to_rdp_scancode[256]);
+
+#endif /* __LOCALE_KEYBOARD_XKB_H */

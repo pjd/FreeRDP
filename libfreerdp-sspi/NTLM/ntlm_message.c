@@ -145,7 +145,7 @@ void ntlm_print_negotiate_flags(uint32 flags)
 	printf("}\n");
 }
 
-SECURITY_STATUS ntlm_read_NegotiateMessage(NTLM_CONTEXT* context, SecBuffer* buffer)
+SECURITY_STATUS ntlm_read_NegotiateMessage(NTLM_CONTEXT* context, PSecBuffer buffer)
 {
 	STREAM* s;
 	int length;
@@ -219,7 +219,7 @@ SECURITY_STATUS ntlm_read_NegotiateMessage(NTLM_CONTEXT* context, SecBuffer* buf
 	return SEC_I_CONTINUE_NEEDED;
 }
 
-SECURITY_STATUS ntlm_write_NegotiateMessage(NTLM_CONTEXT* context, SecBuffer* buffer)
+SECURITY_STATUS ntlm_write_NegotiateMessage(NTLM_CONTEXT* context, PSecBuffer buffer)
 {
 	STREAM* s;
 	int length;
@@ -311,7 +311,7 @@ SECURITY_STATUS ntlm_write_NegotiateMessage(NTLM_CONTEXT* context, SecBuffer* bu
 	return SEC_I_CONTINUE_NEEDED;
 }
 
-SECURITY_STATUS ntlm_read_ChallengeMessage(NTLM_CONTEXT* context, SecBuffer* buffer)
+SECURITY_STATUS ntlm_read_ChallengeMessage(NTLM_CONTEXT* context, PSecBuffer buffer)
 {
 	uint8* p;
 	STREAM* s;
@@ -511,7 +511,7 @@ SECURITY_STATUS ntlm_read_ChallengeMessage(NTLM_CONTEXT* context, SecBuffer* buf
 	return SEC_I_CONTINUE_NEEDED;
 }
 
-SECURITY_STATUS ntlm_write_ChallengeMessage(NTLM_CONTEXT* context, SecBuffer* buffer)
+SECURITY_STATUS ntlm_write_ChallengeMessage(NTLM_CONTEXT* context, PSecBuffer buffer)
 {
 	STREAM* s;
 	int length;
@@ -540,7 +540,7 @@ SECURITY_STATUS ntlm_write_ChallengeMessage(NTLM_CONTEXT* context, SecBuffer* bu
 
 	if (context->NegotiateFlags & NTLMSSP_REQUEST_TARGET)
 	{
-		TargetNameLen = context->TargetName.cbBuffer;
+		TargetNameLen = (uint16) context->TargetName.cbBuffer;
 		TargetNameBuffer = context->TargetName.pvBuffer;
 	}
 	else
@@ -553,7 +553,7 @@ SECURITY_STATUS ntlm_write_ChallengeMessage(NTLM_CONTEXT* context, SecBuffer* bu
 
 	if (context->NegotiateFlags & NTLMSSP_NEGOTIATE_TARGET_INFO)
 	{
-		TargetInfoLen = context->TargetInfo.cbBuffer;
+		TargetInfoLen = (uint16) context->TargetInfo.cbBuffer;
 		TargetInfoBuffer = context->TargetInfo.pvBuffer;
 	}
 	else
@@ -634,7 +634,7 @@ SECURITY_STATUS ntlm_write_ChallengeMessage(NTLM_CONTEXT* context, SecBuffer* bu
 	return SEC_I_CONTINUE_NEEDED;
 }
 
-SECURITY_STATUS ntlm_read_AuthenticateMessage(NTLM_CONTEXT* context, SecBuffer* buffer)
+SECURITY_STATUS ntlm_read_AuthenticateMessage(NTLM_CONTEXT* context, PSecBuffer buffer)
 {
 	STREAM* s;
 	int length;
@@ -905,7 +905,7 @@ SECURITY_STATUS ntlm_read_AuthenticateMessage(NTLM_CONTEXT* context, SecBuffer* 
  * @param buffer
  */
 
-SECURITY_STATUS ntlm_write_AuthenticateMessage(NTLM_CONTEXT* context, SecBuffer* buffer)
+SECURITY_STATUS ntlm_write_AuthenticateMessage(NTLM_CONTEXT* context, PSecBuffer buffer)
 {
 	STREAM* s;
 	int length;
@@ -941,14 +941,14 @@ SECURITY_STATUS ntlm_write_AuthenticateMessage(NTLM_CONTEXT* context, SecBuffer*
 	if (context->ntlm_v2 < 1)
 		WorkstationLen = 0;
 
-	DomainNameLen = context->identity.DomainLength;
+	DomainNameLen = (uint16) context->identity.DomainLength;
 	DomainNameBuffer = (uint8*) context->identity.Domain;
 
-	UserNameLen = context->identity.UserLength;
+	UserNameLen = (uint16) context->identity.UserLength;
 	UserNameBuffer = (uint8*) context->identity.User;
 
-	LmChallengeResponseLen = context->LmChallengeResponse.cbBuffer;
-	NtChallengeResponseLen = context->NtChallengeResponse.cbBuffer;
+	LmChallengeResponseLen = (uint16) context->LmChallengeResponse.cbBuffer;
+	NtChallengeResponseLen = (uint16) context->NtChallengeResponse.cbBuffer;
 
 	EncryptedRandomSessionKeyLen = 16;
 	EncryptedRandomSessionKeyBuffer = context->EncryptedRandomSessionKey;
